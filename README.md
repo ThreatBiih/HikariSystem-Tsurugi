@@ -17,7 +17,7 @@
 
 ---
 
-## 🎯 What is Tsurugi?
+## What is Tsurugi?
 
 **Tsurugi** (剣 - Japanese for "sword") is a modular offensive security framework for Bug Bounty hunters and penetration testers. Unlike basic scanners, Tsurugi **confirms vulnerabilities** before reporting them.
 
@@ -25,7 +25,7 @@
 
 | Feature | Basic Scanners | Tsurugi v3.0 |
 |---------|---------------|--------------|
-| XSS Detection | Pattern matching | ✅ **Browser-confirmed** (zero false positives) |
+| XSS Detection | Pattern matching | ✅ **Browser-confirmed** (zero false positives,flagged for manual analysis) |
 | Secret Detection | Regex only | ✅ **API-verified** (tests if keys work) |
 | DOM XSS | ❌ Not supported | ✅ **Static JS analysis** |
 | CVE Scanning | Limited | ✅ **6000+ Nuclei templates** |
@@ -33,7 +33,7 @@
 
 ---
 
-## 🚀 Features
+## Features
 
 ### Vulnerability Scanners
 - **SQLi** — Error-based + Time-based blind with dynamic threshold
@@ -59,10 +59,10 @@
 
 ---
 
-## 📦 Installation
+## Installation
 
 ```bash
-git clone https://github.com/HikariSystem/TSURUGI.git
+git clone https://github.com/ThreatBiih/HikariSystem-Tsurugi.git
 cd TSURUGI
 pip install -r requirements.txt
 
@@ -76,7 +76,7 @@ playwright install chromium
 
 ---
 
-## 🗡️ Quick Start
+## Quick Start
 
 ### Scan for SQL Injection
 ```bash
@@ -110,7 +110,7 @@ python tsurugi.py secrets "http://target.com/app.js" --verify
 
 ---
 
-## 📋 Full Command Reference
+## Full Command Reference
 
 | Command | Description |
 |---------|-------------|
@@ -140,7 +140,7 @@ python tsurugi.py secrets "http://target.com/app.js" --verify
 
 ---
 
-## 📁 Output Structure
+## Output Structure
 
 ```
 TSURUGI/
