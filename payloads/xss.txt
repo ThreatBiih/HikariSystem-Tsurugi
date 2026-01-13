@@ -1,0 +1,7 @@
+<script>alert('TSURUGI_XSS_TEST')</script>
+"><script>alert('TSURUGI_XSS_TEST')</script>
+<img src=x onerror=alert('TSURUGI_XSS_TEST')>
+';alert('TSURUGI_XSS_TEST');//
+javascript:alert('TSURUGI_XSS_TEST')
+<svg/onload=alert('TSURUGI_XSS_TEST')>
+<body onload=alert('TSURUGI_XSS_TEST')>

