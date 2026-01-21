@@ -25,7 +25,7 @@
 
 | Feature | Basic Scanners | Tsurugi v3.0 |
 |---------|---------------|--------------|
-| XSS Detection | Pattern matching | ✅ **Browser-confirmed** (zero false positives) |
+| XSS Detection | Pattern matching | ✅ **Browser-confirmed** (zero false positives,flagged for manual analysis) |
 | Secret Detection | Regex only | ✅ **API-verified** (tests if keys work) |
 | DOM XSS | ❌ Not supported | ✅ **Static JS analysis** |
 | CVE Scanning | Limited | ✅ **6000+ Nuclei templates** |
@@ -33,7 +33,7 @@
 
 ---
 
-## 🚀 Features
+## Features
 
 ### Vulnerability Scanners
 - **SQLi** — Error-based + Time-based blind with dynamic threshold
@@ -60,12 +60,13 @@
 
 ---
 
+
 ## Research Modules & Polyglots
 
-Tsurugi v3.0 includes curated **Research Modules** in `TSURUGI/payloads/`. These are not just wordlists, but organized knowledge bases maintained by **ThreatBiih & LXrdKnowkill**.
+Tsurugi v3.1 includes curated **Research Modules** in `TSURUGI/payloads/`. These are not just wordlists, but organized knowledge bases maintained by **ThreatBiih & LXrdKnowkill**.
 
 ### Polyglot Payloads
-New in v3.0, we've included **Universal Polyglots** designed to break out of multiple contexts simultaneously.
+New in v3.1, we've included **Universal Polyglots** designed to break out of multiple contexts simultaneously.
 
 **SQLi Polyglot Example:**
 ```sql
@@ -86,10 +87,11 @@ jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */oNcLiCk=alert() )//%0D%0A%0d%0a//</stYle/</
 
 ---
 
+
 ## Installation
 
 ```bash
-git clone https://github.com/HikariSystem/TSURUGI.git
+git clone https://github.com/ThreatBiih/HikariSystem-Tsurugi.git
 cd TSURUGI
 pip install -r requirements.txt
 
@@ -103,7 +105,7 @@ playwright install chromium
 
 ---
 
-## 🗡️ Quick Start
+## Quick Start
 
 ### Scan for SQL Injection
 ```bash
@@ -137,7 +139,7 @@ python tsurugi.py secrets "http://target.com/app.js" --verify
 
 ---
 
-## 📋 Full Command Reference
+## Full Command Reference
 
 | Command | Description |
 |---------|-------------|
