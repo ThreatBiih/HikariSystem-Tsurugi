@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">⚔️ TSURUGI v3.0</h1>
+  <h1 align="center">TSURUGI v3.1</h1>
   <p align="center">
     <strong>Offensive Web Security Framework</strong>
   </p>
@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-3.0-red?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/version-3.1-red?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/python-3.8+-blue?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20Mac-lightgrey?style=for-the-badge" alt="Platform">
   <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
@@ -17,7 +17,7 @@
 
 ---
 
-## 🎯 What is Tsurugi?
+## What is Tsurugi?
 
 **Tsurugi** (剣 - Japanese for "sword") is a modular offensive security framework for Bug Bounty hunters and penetration testers. Unlike basic scanners, Tsurugi **confirms vulnerabilities** before reporting them.
 
@@ -46,6 +46,7 @@
 - **DOM XSS** — Static JavaScript analysis (sinks/sources)
 - **Params** — Hidden parameter discovery
 - **Nuclei** — Integration with 6000+ vulnerability templates
+- **Polyglots** — New context-breaking payloads for SQLi & XSS
 
 ### Recon & Automation
 - **Crawler** — Discovers endpoints, forms, JS routes
@@ -59,7 +60,33 @@
 
 ---
 
-## 📦 Installation
+## Research Modules & Polyglots
+
+Tsurugi v3.0 includes curated **Research Modules** in `TSURUGI/payloads/`. These are not just wordlists, but organized knowledge bases maintained by **ThreatBiih & LXrdKnowkill**.
+
+### Polyglot Payloads
+New in v3.0, we've included **Universal Polyglots** designed to break out of multiple contexts simultaneously.
+
+**SQLi Polyglot Example:**
+```sql
+'"`/*--'/*"/*`/*-- */SELECT 1,2,3||(SELECT 'a')--
+```
+*Contexts broken: String (' " `), Comment (-- #), Integer*
+
+**XSS Polyglot Example:**
+```javascript
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */oNcLiCk=alert() )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert()//>\x3e
+```
+*Contexts broken: HTML, JavaScript, Attribute, URL, CSS*
+
+### Available Research Modules
+- **`sqli.txt`**: 500+ lines covering Parser Differentials, JSON Injection, and OOB DNS.
+- **`xss.txt`**: 520+ lines including Modern Framework Bypass (React/Angular/Vue) and CSP Bypass.
+- **`lfi.txt`**: 600+ lines covering PHP Wrappers, Log Poisoning, and Container Escapes.
+
+---
+
+## Installation
 
 ```bash
 git clone https://github.com/HikariSystem/TSURUGI.git
@@ -140,7 +167,7 @@ python tsurugi.py secrets "http://target.com/app.js" --verify
 
 ---
 
-## 📁 Output Structure
+## Output Structure
 
 ```
 TSURUGI/
@@ -155,7 +182,7 @@ TSURUGI/
 
 ---
 
-## 🔥 Example Workflow
+## Example Workflow
 
 ```bash
 # 1. Crawl target for endpoints
