@@ -1,7 +1,13 @@
 # HikariSystem Tsurugi/modules/xss.py
 """
-XSS MODULE - Reflected XSS detection with HEADLESS CONFIRMATION
-Uses Playwright to confirm XSS by listening for dialog events
+XSS MODULE - Reflected XSS detection with CONTEXT-AWARE ANALYSIS + HEADLESS CONFIRMATION
+
+Detection pipeline:
+  1. Inject canary → check if reflected
+  2. If reflected, parse HTML to determine WHERE (text, attr, script, comment)
+  3. Score confidence based on context + encoding
+  4. Only report as finding if exploitable context detected
+  5. Optionally confirm in headless browser (--confirm) for zero false positives
 """
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 from typing import TYPE_CHECKING
@@ -9,6 +15,7 @@ from rich.panel import Panel
 from core.ui import console, log_info, log_error, log_success, log_warning
 from core.logger import save_loot
 from core.utils import load_payloads
+from core.html_context import analyze_reflections, best_reflection, ContextType
 import os
 from pathlib import Path
 
@@ -258,89 +265,102 @@ def run_xss_scan(ctx: 'TsurugiContext', url: str, confirm: bool = False) -> bool
         oob_payloads = ctx.oob_client.get_payloads()
         current_payloads.extend(oob_payloads)
 
+    # Minimum confidence to report (exploitable context, not just "canary present").
+    CONFIDENCE_THRESHOLD = 0.4
+    potential_findings = []
+
     for param in params.keys():
         console.print(f"Testing parameter: [bold cyan]{param}[/bold cyan]")
 
         for payload in current_payloads:
-            # Construct Fuzzed URL
             fuzzed_params = params.copy()
             fuzzed_params[param] = [payload]
             query_string = urlencode(fuzzed_params, doseq=True)
             fuzzed_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, query_string, parsed.fragment))
 
             try:
-                # 1. Reflected Check
                 resp = requester.get(fuzzed_url, timeout=5)
-                
-                if resp:
-                    reflection_found = False
-                    if CANARY in resp.text:
-                        reflection_found = True
-                        # Check if encoded (safe)
-                        if "&lt;script&gt;" in resp.text and "<script>" not in resp.text:
-                            console.print(f"  [dim]Payload reflected but encoded (Safe): {payload[:30]}...[/dim]")
-                            reflection_found = False
+                if not resp:
+                    continue
 
-                    if reflection_found:
+                # ── Context-aware reflection analysis ──
+                reflections = analyze_reflections(resp.text, CANARY)
+                top = best_reflection(reflections)
+
+                if top and top.confidence >= CONFIDENCE_THRESHOLD:
+                    ctx_label = top.context_type.value
+                    console.print(Panel(
+                        f"Payload: {payload[:60]}\n"
+                        f"Context: {ctx_label}  (escaped={top.escaped})\n"
+                        f"Confidence: {top.confidence:.0%}\n"
+                        f"Breakout hint: {top.breakout_hint}\n"
+                        f"Snippet: ...{top.snippet}...",
+                        title=f"[!] XSS REFLECTION ({param}) [{ctx_label}]",
+                        border_style="yellow" if top.confidence < 0.7 else "red",
+                    ))
+
+                    pocs = generate_static_pocs(payload)
+                    if pocs:
                         console.print(Panel(
-                            f"Payload: {payload}\nURL: {fuzzed_url[:80]}...",
-                            title=f"[!] REFLECTED XSS DETECTED ({param})",
-                            border_style="yellow"
+                            "\n".join(pocs),
+                            title="[bold green]Manual Verification PoCs[/bold green]",
+                            border_style="green",
                         ))
-                        
-                        # Static PoC Suggestion
-                        pocs = generate_static_pocs(payload)
-                        if pocs:
+
+                    if confirm:
+                        console.print("[*] Confirming in headless browser...")
+                        confirm_result = confirm_xss_headless(url, param)
+
+                        if confirm_result["confirmed"]:
                             console.print(Panel(
-                                "\n".join(pocs),
-                                title="[bold green]Manual Verification PoCs[/bold green]",
-                                subtitle="Standard vectors for confirmation",
-                                border_style="green"
+                                f"Payload: {confirm_result['payload']}\n"
+                                f"Dialog: {confirm_result.get('dialog_message', 'alert/confirm/prompt')}\n"
+                                f"Screenshot: {confirm_result.get('screenshot_path', 'N/A')}",
+                                title=f"[!] XSS CONFIRMED IN BROWSER ({param})",
+                                border_style="red",
                             ))
-                        
-                        # If confirm mode, verify in browser
-                        if confirm:
-                            console.print("[*] Confirming in headless browser...")
-                            confirm_result = confirm_xss_headless(url, param)
-                            
-                            if confirm_result["confirmed"]:
-                                console.print(Panel(
-                                    f"Payload: {confirm_result['payload']}\n"
-                                    f"Dialog: {confirm_result.get('dialog_message', 'alert/confirm/prompt')}\n"
-                                    f"Screenshot: {confirm_result.get('screenshot_path', 'N/A')}",
-                                    title=f"[!] XSS CONFIRMED IN BROWSER ({param})",
-                                    border_style="red"
-                                ))
-                                detected = True
-                                confirmed_vulns.append({
-                                    "param": param,
-                                    "payload": confirm_result["payload"],
-                                    "url": confirm_result["url"],
-                                    "screenshot": confirm_result.get("screenshot_path")
-                                })
-                                save_loot("xss_confirmed", fuzzed_url, {
-                                    "payload": confirm_result["payload"],
-                                    "confirmed": True,
-                                    "dialog_message": confirm_result.get("dialog_message"),
-                                    "screenshot": confirm_result.get("screenshot_path")
-                                })
-                            else:
-                                console.print("[dim]Reflection found but dialog didn't trigger (might be filtered)[/dim]")
-                                # Still save as potential
-                                save_loot("xss_potential", fuzzed_url, {
-                                    "payload": payload,
-                                    "confirmed": False,
-                                    "note": "Reflected but not confirmed in browser"
-                                })
-                        else:
-                            # No confirmation mode - save as detected
                             detected = True
-                            save_loot("xss", fuzzed_url, {"payload": payload, "canary": CANARY})
-                            console.print("  [bold yellow]Use --confirm to verify in browser![/bold yellow]")
-                        
-                        break
-                
-                # 2. OOB Check (Blind) - FIX: Use ctx.oob_client
+                            confirmed_vulns.append({
+                                "param": param,
+                                "payload": confirm_result["payload"],
+                                "url": confirm_result["url"],
+                                "screenshot": confirm_result.get("screenshot_path"),
+                            })
+                            save_loot("xss_confirmed", fuzzed_url, {
+                                "payload": confirm_result["payload"],
+                                "confirmed": True,
+                                "context": ctx_label,
+                                "confidence": top.confidence,
+                                "dialog_message": confirm_result.get("dialog_message"),
+                                "screenshot": confirm_result.get("screenshot_path"),
+                            })
+                        else:
+                            console.print("[dim]Reflection found but dialog didn't trigger (might be filtered)[/dim]")
+                            save_loot("xss_potential", fuzzed_url, {
+                                "payload": payload,
+                                "confirmed": False,
+                                "context": ctx_label,
+                                "confidence": top.confidence,
+                                "note": "Exploitable context but dialog did not fire",
+                            })
+                    else:
+                        detected = True
+                        save_loot("xss", fuzzed_url, {
+                            "payload": payload,
+                            "context": ctx_label,
+                            "confidence": top.confidence,
+                            "escaped": top.escaped,
+                            "breakout_hint": top.breakout_hint,
+                        })
+                        console.print("  [bold yellow]Use --confirm to verify in browser![/bold yellow]")
+
+                    break
+
+                elif reflections and not top:
+                    # Canary reflected but all contexts are encoded / non-exploitable.
+                    console.print(f"  [dim]Reflected but encoded/non-exploitable: {payload[:30]}...[/dim]")
+
+                # ── OOB Check (Blind XSS) ──
                 if ctx.oob_client and ctx.oob_client.registered:
                     if ctx.oob_client.domain in payload:
                         interactions = ctx.oob_client.poll()
@@ -348,28 +368,31 @@ def run_xss_scan(ctx: 'TsurugiContext', url: str, confirm: bool = False) -> bool
                             console.print(Panel(
                                 f"Payload: {payload}\nInteraction: {interactions}",
                                 title=f"[!] BLIND XSS (OOB) CONFIRMED ({param})",
-                                border_style="red"
+                                border_style="red",
                             ))
                             detected = True
-                            save_loot("xss_blind", fuzzed_url, {"payload": payload, "interactions": interactions})
+                            save_loot("xss_blind", fuzzed_url, {
+                                "payload": payload,
+                                "interactions": interactions,
+                            })
                             break
 
-            except Exception as e:
-                # log_warning(f"Request error: {e}")
+            except Exception:
                 pass
-            
-            if detected and not confirm: break
-        if detected and not confirm: break
 
-    # Summary
+            if detected and not confirm:
+                break
+        if detected and not confirm:
+            break
+
+    # ── Summary ──
     if confirm and confirmed_vulns:
-        console.print(f"\n[bold green]✓ {len(confirmed_vulns)} XSS vulnerabilities CONFIRMED in browser[/bold green]")
+        console.print(f"\n[bold green][+] {len(confirmed_vulns)} XSS CONFIRMED in browser[/bold green]")
         for vuln in confirmed_vulns:
             console.print(f"  - {vuln['param']}: {vuln['payload'][:40]}")
     elif not detected:
-        console.print("\n[dim]No obvious Reflected XSS found.[/dim]")
-        # FIX: Use ctx.oob_client
+        console.print("\n[dim]No exploitable Reflected XSS found.[/dim]")
         if ctx.oob_client:
             console.print("[dim]OOB payloads sent. Check Interactsh later if delayed.[/dim]")
-    
+
     return detected
