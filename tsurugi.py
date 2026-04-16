@@ -34,6 +34,7 @@ from modules.sqli_extractor import run_sqli_extraction
 from modules.xss_exploiter import run_xss_exploit
 from modules.lfi_exploiter import run_lfi_exploit
 from modules.cve_intel import run_cve_lookup
+from modules.firebase import run_firebase_scan
 from core.workflow import run_autopilot
 
 # Load environment variables
@@ -300,6 +301,17 @@ def jwt(token: str = typer.Argument(..., help="JWT token to analyze"),
         secret=secret,
         public_key=public_key
     )
+
+
+@app.command()
+def firebase(url: str = typer.Argument(..., help="Target URL (SPA root, login page, or any page that loads the firebaseConfig)")):
+    """
+    Firebase Misconfiguration Scanner: detects exposed firebaseConfig and tests
+    RTDB / Firestore / Identity Toolkit / Storage for unauthenticated access.
+    Read-only by design — never writes, never creates accounts.
+    """
+    print_banner()
+    run_firebase_scan(url, cookie=ctx.cookie, proxy=ctx.proxy)
 
 
 @app.command()
